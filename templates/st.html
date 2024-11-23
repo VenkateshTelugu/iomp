@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Scheme</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #4CAF50;
+        }
+
+        .solar-image {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+
+        .login-button {
+            display: inline-block;
+            padding: 10px 20px;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .login-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to the Solar Scheme Initiative</h1>
+        <img src="https://blog.evbazaar.com/wp-content/uploads/2024/02/PM-Surya-Ghar.png" alt="Solar Energy" class="solar-image">
+        <div class="info">
+            <h2>Why Choose Solar Energy?</h2>
+            <p>Solar energy is a clean, renewable source of energy that can help reduce your carbon footprint and lower energy costs. Our solar scheme offers various incentives and support for installing solar panels.</p>
+            <p>Join us in making a sustainable future by harnessing the power of the sun!</p>
+        </div>
+        <a href="{{ url_for('login') }}" class="login-button">Login to Get Started</a> <!-- Correct link to login -->
+    </div>
+
+
+
+
+    <div>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <label for="image">Upload Roof Image:</label>
+            <input type="file" name="image" id="image" required>
+            <button type="submit">Analyze</button>
+        </form>
+    </div>
+</body>
+</html>

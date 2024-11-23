@@ -1,0 +1,580 @@
+# from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+# from pymongo import MongoClient
+# from werkzeug.security import generate_password_hash, check_password_hash
+# import requests
+# from bs4 import BeautifulSoup
+# from datetime import datetime
+
+# app = Flask(__name__)
+# app.secret_key = 'd3c5c64f8e2b0cd6a01f5a7ee02e5e7c'
+
+
+# client = MongoClient('mongodb://localhost:27017/yourDatabaseName')
+# db = client['solar_dashboard']
+# users_collection = db['users']
+# weather_collection = db['weather'] 
+# collection = db['solar_details']
+# vacation_collection = db['vacations']
+# @app.route('/')
+# def home():
+#     return render_template('st.html')
+    
+    
+# @app.route('/register', methods=['GET', 'POST'])
+# def register():
+#     if request.method == 'POST':
+#         data = request.json
+#         existing_user = users_collection.find_one({'username': data['username']})
+#         if existing_user:
+#             return jsonify(message="You are already registered. Please go to the login page."), 400
+        
+#         hashed_password = generate_password_hash(data['password'])
+#         users_collection.insert_one({'username': data['username'], 'password': hashed_password})
+#         return jsonify(success=True)
+    
+#     return render_template('register.html')
+
+# @app.route('/login', methods=['GET', 'POST'])
+# def login():
+#     if request.method == 'POST':
+#         data = request.get_json()
+#         if not data:
+#             return jsonify({"success": False, "message": "No input data provided"}), 400
+        
+#         username = data.get('username')
+#         password = data.get('password')
+        
+#         user = users_collection.find_one({'username': username})
+#         if user and check_password_hash(user['password'], password):
+#             session['username'] = username 
+#             return jsonify({"success": True, "redirect": url_for('user_home')})  
+#         else:
+#             return jsonify({"success": False, "message": "Invalid credentials"}), 401
+
+#     return render_template('login.html')
+
+
+# @app.route('/home')
+# def user_home():
+#     username = session.get('username')
+#     if not username:
+#         return redirect(url_for('login'))
+
+#     # Fetch electricity units using username (service number)
+#     units_value = get_electricity_units(username)  # Function to fetch units
+
+#     # Fetch latest weather data from MongoDB
+#     latest_weather = weather_collection.find_one(sort=[('timestamp', -1)])
+    
+    
+#     if latest_weather is not None:
+#         weather_data = {
+#             'temperature': latest_weather.get('temperature', 'N/A'),
+#             'humidity': latest_weather.get('humidity', 'N/A'),
+#             'windSpeed': latest_weather.get('windSpeed', 'N/A'),
+#             'cloudCover': latest_weather.get('cloudCover', 'N/A'),
+#             'solarRadiation': latest_weather.get('solarRadiation', 'N/A'),
+#         }
+#     else:
+#         weather_data = {
+#             'temperature': 'Data not available',
+#             'humidity': 'Data not available',
+#             'windSpeed': 'Data not available',
+#             'cloudCover': 'Data not available',
+#             'solarRadiation': 'Data not available',
+#         }
+#     solar_details = db.solar_details.find_one()
+#     if solar_details:
+#         installment_cost = solar_details.get('installment_cost', 0)  # Get the installment cost
+#     else:
+#         installment_cost = 0
+#     return render_template('home.html', units_value=units_value, weather_data=weather_data,installment_cost=installment_cost)
+
+
+
+# def get_electricity_units(service_number):
+#     form_url = 'https://tgsouthernpower.org/paybillonline'
+#     session = requests.Session()
+    
+#     initial_response = session.get(form_url)
+#     payload = {'ukscno': service_number}
+#     response = session.post(form_url, data=payload)
+
+#     if response.status_code == 200:
+#         soup = BeautifulSoup(response.content, 'html.parser')
+#         td_value_elements = soup.find_all('tr', class_='border-bottom')
+
+#         if len(td_value_elements) >= 6:
+#             sixth_td_value_element = td_value_elements[5]
+#             sixth_td_value = sixth_td_value_element.find('td')
+#             if sixth_td_value:
+#                 return sixth_td_value.text.strip()
+#             else:
+#                 return "No units data available."
+#         else:
+#             return "Less than six rows with the specified class found."
+#     else:
+#         return f"Failed to retrieve data. Status code: {response.status_code}"
+    
+
+
+
+# @app.route('/submit_vacation', methods=['POST'])
+# def submit_vacation():
+#     data = request.get_json()
+    
+#     type_of_leave = data.get('type')
+#     num_days = int(data.get('days'))
+    
+#     # Insert data into MongoDB
+#     vacation_data = {
+#         "type": type_of_leave,
+#         "days": num_days
+#     }
+    
+#     try:
+#         vacation_collection.insert_one(vacation_data)
+#         return jsonify({"status": "success", "message": "Data stored successfully!"}), 200
+#     except Exception as e:
+#         return jsonify({"status": "error", "message": str(e)}), 500
+    
+    
+        
+
+# @app.route('/profile_settings', methods=['GET', 'POST'])
+# def profile_settings():
+#     user_id = session.get('username')  # Ensure you're getting the right user ID from session
+#     if not user_id:
+#         flash('Please log in first.', 'warning')
+#         return redirect(url_for('login'))
+
+#     # Retrieve current solar details if available
+#     solar_details = collection.find_one({'user_id': user_id})
+
+#     if request.method == 'POST':
+#         # Retrieve form data
+#         solar_size = request.form['solar_size']
+#         setup_date = request.form['setup_date']
+#         installment_cost = request.form['installment_cost']
+
+#         # Debug: Print the form data to check if it's coming through
+#         print(f"Form data: Solar size={solar_size}, Setup date={setup_date}, Installment cost={installment_cost}")
+
+#         # Ensure that the date is correctly converted to a datetime object
+#         try:
+#             setup_date_obj = datetime.strptime(setup_date, '%Y-%m-%d')
+#         except ValueError:
+#             flash('Invalid date format. Please use YYYY-MM-DD.', 'danger')
+#             return redirect(url_for('profile_settings'))
+
+#         if solar_details:
+#             # Update existing user's solar details in MongoDB
+#             result = collection.update_one(
+#                 {'user_id': user_id},
+#                 {'$set': {
+#                     'size': solar_size,
+#                     'initial_setup_date': setup_date_obj,
+#                     'installment_cost': installment_cost
+#                 }}
+#             )
+#             print(f"Update result: {result.modified_count}")  # Debugging line to check if update worked
+#             if result.modified_count > 0:
+#                 flash('Your solar details have been updated successfully!', 'success')
+#             else:
+#                 flash('No changes were made to your solar details.', 'info')
+#         else:
+#             # Insert new solar details if user does not have them already
+#             result = collection.insert_one({
+#                 'user_id': user_id,
+#                 'size': solar_size,
+#                 'initial_setup_date': setup_date_obj,
+#                 'installment_cost': installment_cost
+#             })
+#             print(f"Insert result: {result.inserted_id}")  # Debugging line to check if insert worked
+#             flash('Your solar details have been saved successfully!', 'success')
+
+#         return redirect(url_for('profile_settings'))
+
+#     return render_template('profile_settings.html', solar_details=solar_details)
+
+
+
+# @app.route('/logout')
+# def logout():
+#     session.pop('username', None)
+#     return redirect(url_for('login'))
+
+# if __name__ == '__main__':
+#     app.run(debug=True)
+
+
+
+
+
+
+
+
+
+
+
+
+# def get_electricity_units(service_number):
+#     try:
+#         form_url = 'https://tgsouthernpower.org/paybillonline'
+#         session = requests.Session()
+
+#         initial_response = session.get(form_url)
+#         payload = {'ukscno': service_number}
+#         response = session.post(form_url, data=payload)
+
+#         if response.status_code == 200:
+#             soup = BeautifulSoup(response.content, 'html.parser')
+#             td_value_elements = soup.find_all('tr', class_='border-bottom')
+
+#             if len(td_value_elements) >= 6:
+#                 sixth_td_value_element = td_value_elements[5]
+#                 sixth_td_value = sixth_td_value_element.find('td')
+#                 return sixth_td_value.text.strip() if sixth_td_value else "No units data available."
+#             else:
+#                 return "Insufficient data rows found."
+#         else:
+#             return f"Failed to retrieve data. Status code: {response.status_code}"
+#     except Exception as e:
+#         return f"Error fetching units: {str(e)}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <script>
+    const WEATHER_API_KEY = "22e446a944184fb0a29102244240611";
+    const PANEL_WATTAGE = 300;
+    const UV_INDEX_TO_PEAK_SUN_HOURS_SCALE = 0.9;
+    let collectedData = [];
+    let totalEnergyProductionKWh = 0;
+
+    function getPastDate(daysAgo) {
+      const date = new Date();
+      date.setDate(date.getDate() - daysAgo);
+      return date.toISOString().split("T")[0];
+    }
+
+    function calculateSolarProduction(uvIndex) {
+      const peakSunHours = uvIndex * UV_INDEX_TO_PEAK_SUN_HOURS_SCALE;
+      const energyProductionWh = PANEL_WATTAGE * peakSunHours;
+      const energyProductionKWh = energyProductionWh / 1000;
+      return { energyProductionWh, energyProductionKWh, peakSunHours };
+    }
+
+    async function fetchWeatherData(lat, lon, date) {
+      const weatherUrl = `https://api.weatherapi.com/v1/history.json?key=${WEATHER_API_KEY}&q=${lat},${lon}&dt=${date}`;
+      try {
+        const response = await fetch(weatherUrl);
+        if (!response.ok) throw new Error(`Failed to fetch data for ${date}`);
+        const data = await response.json();
+        const dayData = data.forecast.forecastday[0]?.day;
+
+        if (!dayData) return null;
+
+        return {
+          date: date,
+          uvIndex: dayData.uv,
+        };
+      } catch (error) {
+        console.error(`Error fetching data for ${date}: ${error.message}`);
+        return null;
+      }
+    }
+
+    function displayData(weatherData) {
+      if (!weatherData) return;
+
+      const { energyProductionWh, energyProductionKWh, peakSunHours } = calculateSolarProduction(weatherData.uvIndex);
+      totalEnergyProductionKWh += energyProductionKWh;
+
+      collectedData.push({
+        ...weatherData,
+        energyProductionWh,
+        energyProductionKWh,
+        peakSunHours,
+      });
+
+      const weatherTableBody = document.querySelector("#weather-table tbody");
+      const newRow = document.createElement("tr");
+      newRow.innerHTML = `
+        <td>${weatherData.date}</td>
+        <td>${weatherData.uvIndex}</td>
+        <td>${peakSunHours.toFixed(2)}</td>
+        <td>${energyProductionWh.toFixed(2)}</td>
+        <td>${energyProductionKWh.toFixed(2)}</td>
+      `;
+      weatherTableBody.appendChild(newRow);
+
+      document.getElementById("total-energy").innerHTML = `
+        <h3>Total Energy Production: ${totalEnergyProductionKWh.toFixed(2)} kWh</h3>
+      `;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        for (let i = 0; i < 15; i++) {
+          const date = getPastDate(i);
+          const weatherData = await fetchWeatherData(lat, lon, date);
+          if (weatherData) displayData(weatherData);
+          await new Promise(resolve => setTimeout(resolve, 500)); // Avoid rate limits
+        }
+      },
+      (error) => console.error("Geolocation error:", error)
+    );
+
+    function displayProfitOrLoss() {
+      if (totalEnergyProductionKWh === 0) return;
+
+      const energyValue = totalEnergyProductionKWh * 4*4 ;
+      const unitsValue = {{ units_value or 0 }} * 5;
+      const profitOrLoss = unitsValue - energyValue;
+      const profitLossText = profitOrLoss >= 0 ? "Profit" : "Loss";
+
+      document.getElementById("profit-loss-value").innerText =
+        `${profitLossText}: ₹${Math.abs(profitOrLoss).toFixed(2)}`;
+
+      const installmentCost = {{ installment_cost or 0 }};
+      const monthsRequired = profitOrLoss !== 0 ? installmentCost / Math.abs(profitOrLoss) : Infinity;
+
+      document.getElementById("estimated-months").innerText = 
+        monthsRequired === Infinity ? "N/A" : `${monthsRequired.toFixed(2)} months`;
+    }
+
+    setTimeout(displayProfitOrLoss, 3000); // Allow time for data collection
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" /> -->
+  <title>Solar Dashboard</title>
+</head>
+<body>
+  <header>
+    <h1>Solar Dashboard</h1>
+    <nav>
+      <ul>
+             <li><a href="{{ url_for('solar_details', user_id=user_id) }}">Solar Details</a></li>
+            <li><a href="{{ url_for('vacations', user_id=user_id) }}">Vacations</a> </li>
+             <li><a href="{{ url_for('vehicle_charge', user_id=user_id) }}">Vehicle Charge</a></li>
+             <li><a href="{{ url_for('profile_settings', user_id=user_id) }}">Profile Settings</a> </li>
+             <li><a href="{{ url_for('logout') }}">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Solar Installation Analysis</h1>
+    <div id="results">
+      <p>Roof Area: {{ area or "N/A" }} sq. ft.</p>
+      <p>Usable Solar Area: {{ solar_area or "N/A" }} sq. ft.</p>
+      <p>Estimated Panels: {{ panels or "N/A" }}</p>
+      <p>Shading Impact: {{ shading_impact or "N/A" }}</p>
+    </div>
+
+
+    <div id="profit-loss">
+      <h3>Profit or Loss:</h3>
+      <p id="profit-loss-value">Calculating...</p>
+    </div>
+
+    <div id="top-info">
+      Estimated months to clear the installation cost: <span id="estimated-months">Calculating...</span>
+    </div>
+
+    <div class="units-value-box">
+      <h3>Last Month's Electricity Units:</h3>
+      <p>
+        {% if units_value %}
+        <strong>{{ units_value }} units</strong>
+        {% else %}
+        <strong>No units data available.</strong>
+        {% endif %}
+      </p>
+    </div>
+
+    <div id="total-energy">
+      <h3>Total Energy Production: 0 kWh</h3>
+    </div>
+
+    <p>Installment Cost: ₹{{ installment_cost or 0 }}</p>
+
+    <div class="weather-data">
+      <h3>Weather Data</h3>
+      <table id="weather-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Solar Radiation (UV Index)</th>
+            <th>Peak Sun Hours</th>
+            <th>Generated Energy (Wh)</th>
+            <th>Generated Energy (kWh)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2024 Solar Dashboard. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const WEATHER_API_KEY = "22e446a944184fb0a29102244240611";
+    const PANEL_WATTAGE = 300;
+    const UV_INDEX_TO_PEAK_SUN_HOURS_SCALE = 0.9;
+    let collectedData = [];
+    let totalEnergyProductionKWh = 0;
+
+    function getPastDate(daysAgo) {
+      const date = new Date();
+      date.setDate(date.getDate() - daysAgo);
+      return date.toISOString().split("T")[0];
+    }
+
+    function calculateSolarProduction(uvIndex) {
+      const peakSunHours = uvIndex * UV_INDEX_TO_PEAK_SUN_HOURS_SCALE;
+      const energyProductionWh = PANEL_WATTAGE * peakSunHours;
+      const energyProductionKWh = energyProductionWh / 1000;
+      return { energyProductionWh, energyProductionKWh, peakSunHours };
+    }
+
+    async function fetchWeatherData(lat, lon, date) {
+      const weatherUrl = `https://api.weatherapi.com/v1/history.json?key=${WEATHER_API_KEY}&q=${lat},${lon}&dt=${date}`;
+      try {
+        const response = await fetch(weatherUrl);
+        if (!response.ok) throw new Error(`Failed to fetch data for ${date}`);
+        const data = await response.json();
+        const dayData = data.forecast.forecastday[0]?.day;
+
+        if (!dayData) return null;
+
+        return {
+          date: date,
+          uvIndex: dayData.uv,
+        };
+      } catch (error) {
+        console.error(`Error fetching data for ${date}: ${error.message}`);
+        return null;
+      }
+    }
+
+    function displayData(weatherData) {
+      if (!weatherData) return;
+
+      const { energyProductionWh, energyProductionKWh, peakSunHours } = calculateSolarProduction(weatherData.uvIndex);
+      totalEnergyProductionKWh += energyProductionKWh;
+
+      collectedData.push({
+        ...weatherData,
+        energyProductionWh,
+        energyProductionKWh,
+        peakSunHours,
+      });
+
+      const weatherTableBody = document.querySelector("#weather-table tbody");
+      const newRow = document.createElement("tr");
+      newRow.innerHTML = `
+        <td>${weatherData.date}</td>
+        <td>${weatherData.uvIndex}</td>
+        <td>${peakSunHours.toFixed(2)}</td>
+        <td>${energyProductionWh.toFixed(2)}</td>
+        <td>${energyProductionKWh.toFixed(2)}</td>
+      `;
+      weatherTableBody.appendChild(newRow);
+
+      document.getElementById("total-energy").innerHTML = `
+        <h3>Total Energy Production: ${totalEnergyProductionKWh.toFixed(2)} kWh</h3>
+      `;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        for (let i = 0; i < 15; i++) {
+          const date = getPastDate(i);
+          const weatherData = await fetchWeatherData(lat, lon, date);
+          if (weatherData) displayData(weatherData);
+          await new Promise(resolve => setTimeout(resolve, 500)); // Avoid rate limits
+        }
+      },
+      (error) => console.error("Geolocation error:", error)
+    );
+
+    function displayProfitOrLoss() {
+      if (totalEnergyProductionKWh === 0) return;
+
+      const energyValue = totalEnergyProductionKWh * 4;
+      // const unitsValue = {{ units_value or 0 }} * 5;
+      const unitsValue=182*5;
+      const profitOrLoss = unitsValue - energyValue;
+      const profitLossText = profitOrLoss >= 0 ? "Profit" : "Loss";
+
+      document.getElementById("profit-loss-value").innerText =
+        `${profitLossText}: ₹${Math.abs(profitOrLoss).toFixed(2)}`;
+
+      const installmentCost = {{ installment_cost or 0 }};
+      const monthsRequired = profitOrLoss !== 0 ? installmentCost / Math.abs(profitOrLoss) : Infinity;
+
+      document.getElementById("estimated-months").innerText = 
+        monthsRequired === Infinity ? "N/A" : `${monthsRequired.toFixed(2)} months`;
+    }
+
+    setTimeout(displayProfitOrLoss, 3000); // Allow time for data collection
+  </script>
+</body>
+</html>

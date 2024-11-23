@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+  <title>Solar Dashboard</title>
+</head>
+<body>
+  <header>
+    <h1>Solar Dashboard</h1>
+    <nav>
+      <ul>
+             <li><a href="{{ url_for('solar_details', user_id=user_id) }}">Solar Details</a></li>
+            <li><a href="{{ url_for('vacations', user_id=user_id) }}">Vacations</a> </li>
+             <li><a href="{{ url_for('vehicle_charge', user_id=user_id) }}">Vehicle Charge</a></li>
+             <li><a href="{{ url_for('profile_settings', user_id=user_id) }}">Profile Settings</a> </li>
+             <li><a href="{{ url_for('logout') }}">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Solar Installation Analysis</h1>
+    <div id="results">
+      <p>Roof Area: {{ area or "N/A" }} sq. ft.</p>
+      <p>Usable Solar Area: {{ solar_area or "N/A" }} sq. ft.</p>
+      <p>Estimated Panels: {{ panels or "N/A" }}</p>
+      <p>Shading Impact: {{ shading_impact or "N/A" }}</p>
+    </div>
+
+
+    <div id="profit-loss">
+      <h3>Profit or Loss:</h3>
+      <p id="profit-loss-value">Calculating...</p>
+    </div>
+
+    <div id="top-info">
+      Estimated months to clear the installation cost: <span id="estimated-months">Calculating...</span>
+    </div>
+
+    <div class="units-value-box">
+      <h3>Last Month's Electricity Units:</h3>
+      <p>
+        {% if units_value %}
+        <strong>{{ units_value }} units</strong>
+        {% else %}
+        <strong>No units data available.</strong>
+        {% endif %}
+      </p>
+    </div>
+
+    <div id="total-energy">
+      <h3>Total Energy Production: 0 kWh</h3>
+    </div>
+
+    <p>Installment Cost: ₹{{ installment_cost or 0 }}</p>
+
+    <div class="weather-data">
+      <h3>Weather Data</h3>
+      <table id="weather-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Solar Radiation (UV Index)</th>
+            <th>Peak Sun Hours</th>
+            <th>Generated Energy (Wh)</th>
+            <th>Generated Energy (kWh)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2024 Solar Dashboard. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const WEATHER_API_KEY = "22e446a944184fb0a29102244240611";
+    const PANEL_WATTAGE = 300;
+    const UV_INDEX_TO_PEAK_SUN_HOURS_SCALE = 0.9;
+    let collectedData = [];
+    let totalEnergyProductionKWh = 0;
+
+    function getPastDate(daysAgo) {
+      const date = new Date();
+      date.setDate(date.getDate() - daysAgo);
+      return date.toISOString().split("T")[0];
+    }
+
+    function calculateSolarProduction(uvIndex) {
+      const peakSunHours = uvIndex * UV_INDEX_TO_PEAK_SUN_HOURS_SCALE;
+      const energyProductionWh = PANEL_WATTAGE * peakSunHours;
+      const energyProductionKWh = energyProductionWh / 1000;
+      return { energyProductionWh, energyProductionKWh, peakSunHours };
+    }
+
+    async function fetchWeatherData(lat, lon, date) {
+      const weatherUrl = `https://api.weatherapi.com/v1/history.json?key=${WEATHER_API_KEY}&q=${lat},${lon}&dt=${date}`;
+      try {
+        const response = await fetch(weatherUrl);
+        if (!response.ok) throw new Error(`Failed to fetch data for ${date}`);
+        const data = await response.json();
+        const dayData = data.forecast.forecastday[0]?.day;
+
+        if (!dayData) return null;
+
+        return {
+          date: date,
+          uvIndex: dayData.uv,
+        };
+      } catch (error) {
+        console.error(`Error fetching data for ${date}: ${error.message}`);
+        return null;
+      }
+    }
+
+    function displayData(weatherData) {
+      if (!weatherData) return;
+
+      const { energyProductionWh, energyProductionKWh, peakSunHours } = calculateSolarProduction(weatherData.uvIndex);
+      totalEnergyProductionKWh += energyProductionKWh;
+
+      collectedData.push({
+        ...weatherData,
+        energyProductionWh,
+        energyProductionKWh,
+        peakSunHours,
+      });
+
+      const weatherTableBody = document.querySelector("#weather-table tbody");
+      const newRow = document.createElement("tr");
+      newRow.innerHTML = `
+        <td>${weatherData.date}</td>
+        <td>${weatherData.uvIndex}</td>
+        <td>${peakSunHours.toFixed(2)}</td>
+        <td>${energyProductionWh.toFixed(2)}</td>
+        <td>${energyProductionKWh.toFixed(2)}</td>
+      `;
+      weatherTableBody.appendChild(newRow);
+
+      document.getElementById("total-energy").innerHTML = `
+        <h3>Total Energy Production: ${totalEnergyProductionKWh.toFixed(2)} kWh</h3>
+      `;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        for (let i = 0; i < 15; i++) {
+          const date = getPastDate(i);
+          const weatherData = await fetchWeatherData(lat, lon, date);
+          if (weatherData) displayData(weatherData);
+          await new Promise(resolve => setTimeout(resolve, 500)); // Avoid rate limits
+        }
+      },
+      (error) => console.error("Geolocation error:", error)
+    );
+
+    function displayProfitOrLoss() {
+      if (totalEnergyProductionKWh === 0) return;
+
+      const energyValue = totalEnergyProductionKWh * 4;
+      // const unitsValue = {{ units_value or 0 }} * 5;
+      const unitsValue=182*5;
+      const profitOrLoss = unitsValue - energyValue;
+      const profitLossText = profitOrLoss >= 0 ? "Profit" : "Loss";
+
+      document.getElementById("profit-loss-value").innerText =
+        `${profitLossText}: ₹${Math.abs(profitOrLoss).toFixed(2)}`;
+
+      const installmentCost = {{ installment_cost or 0 }};
+      const monthsRequired = profitOrLoss !== 0 ? installmentCost / Math.abs(profitOrLoss) : Infinity;
+
+      document.getElementById("estimated-months").innerText = 
+        monthsRequired === Infinity ? "N/A" : `${monthsRequired.toFixed(2)} months`;
+    }
+
+    setTimeout(displayProfitOrLoss, 3000); // Allow time for data collection
+  </script>
+</body>
+</html>

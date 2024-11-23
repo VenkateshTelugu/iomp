@@ -1,0 +1,93 @@
+/* General body styling */
+body {
+    background-image: url('https://www.hotsolarsolutions.com/wp-content/uploads/2020/04/88570932_l.jpg'); /* Replace with your background image path */
+    background-size: cover; /* Cover the entire page */
+    background-repeat: no-repeat; /* Do not repeat the image */
+    background-attachment: fixed; /* Keep the image fixed when scrolling */
+    background-position: center; /* Center the background image */
+    margin: 0; /* Remove default margin */
+    font-family: Arial, sans-serif; /* Default font */
+    color: #f6eeee; /* Default text color */
+}
+
+/* Header styling */
+header {
+    background-color: rgba(14, 209, 231, 0.8); /* Dark background for header */
+    color: #e7e1e1; /* White text color */
+    padding: 10px 20px;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    height: 9%; /* Ensures header stays above other content */
+}
+
+header h1 {
+    margin: 0; /* Remove margin */
+}
+
+/* Main content styling */
+main {
+    margin-top: 60px; /* Adjust for the height of the header */
+    display: flex; /* Use flexbox for centering */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    height: calc(100vh - 60px); /* Full viewport height minus header */
+}
+
+/* Settings container styling */
+.settings-container {
+    background-color: rgba(103, 147, 174, 0.9); /* White background for the form container */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+    padding: 20px; /* Padding inside the container */
+    width: 300px; /* Fixed width for the container */
+}
+
+/* Form styling */
+form {
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column; /* Stack items vertically */
+}
+
+/* Label styling */
+label {
+    margin-bottom: 5px; /* Space between label and input */
+}
+
+/* Input styling */
+input[type="number"],
+input[type="date"] {
+    padding: 10px; /* Padding inside the input */
+    margin-bottom: 15px; /* Space below the input */
+    border: 1px solid #ccc; /* Border for input */
+    border-radius: 4px; /* Rounded corners */
+    font-size: 16px; /* Font size */
+}
+
+/* Button styling */
+button {
+    padding: 10px; /* Padding inside the button */
+    background-color: rgba(14, 209, 231, 0.8); /* Button color */
+    color: #ffffff; /* Button text color */
+    border: none; /* No border */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    font-size: 16px; /* Font size */
+}
+
+/* Button hover effect */
+button:hover {
+    background-color: rgba(14, 209, 231, 1); /* Darker button color on hover */
+}
+
+/* Footer styling */
+footer {
+    background-color: rgba(9, 160, 236, 0.8); /* Dark background for footer */
+    color: #ffffff; /* White text */
+    text-align: center; /* Centered text */
+    padding: 15px; /* Padding inside footer */
+    position: fixed; /* Fixed footer */
+    width: 100%; /* Full width */
+    bottom: 0; /* Position at the bottom */
+}

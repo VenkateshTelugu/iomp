@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar Energy Calculator</title>
+</head>
+<body>
+  <h1>Solar Energy Generation</h1>
+  <p>Enter your panel specifications and get energy generation data for your location:</p>
+  <div>
+    <label for="wattage">Panel Wattage (W): </label>
+    <input type="number" id="wattage" value="300">
+  </div>
+  <div>
+    <label for="efficiency">Panel Efficiency (%): </label>
+    <input type="number" id="efficiency" value="15">
+  </div>
+  <div>
+    <label for="area">Panel Area (m²): </label>
+    <input type="number" id="area" value="2">
+  </div>
+  <button id="get-energy">Calculate Solar Energy</button>
+
+  <h2>Energy Generation Data</h2>
+  <p id="location"></p>
+  <table id="solar-table" border="1">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Solar Irradiance (kWh/m²/day)</th>
+        <th>Energy Production (kWh)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const BASE_API_URL = "https://api.open-meteo.com/v1/forecast";
+    
+    function getPastDates(days) {
+      const today = new Date();
+      const dates = [];
+      for (let i = 0; i < days; i++) {
+        const pastDate = new Date();
+        pastDate.setDate(today.getDate() - i);
+        dates.push(pastDate.toISOString().split("T")[0]);
+      }
+      return dates;
+    }
+
+    async function fetchSolarData(lat, lon, startDate, endDate) {
+      const url = `${BASE_API_URL}?latitude=${lat}&longitude=${lon}&start_date=${startDate}&end_date=${endDate}&daily=shortwave_radiation_sum&timezone=auto`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch solar data: ${response.statusText}`);
+        const data = await response.json();
+        return data.daily.time.map((date, index) => ({
+          date,
+          solarRadiation: data.daily.shortwave_radiation_sum[index] / 1000, // Convert from Wh/m² to kWh/m²
+        }));
+      } catch (error) {
+        console.error(error);
+        return [];
+      }
+    }
+
+    async function calculateSolarEnergy(lat, lon, days = 7) {
+      const panelWattage = parseFloat(document.getElementById("wattage").value);
+      const panelEfficiency = parseFloat(document.getElementById("efficiency").value) / 100;
+      const panelArea = parseFloat(document.getElementById("area").value);
+
+      const dates = getPastDates(days);
+      const startDate = dates[dates.length - 1];
+      const endDate = dates[0];
+
+      const solarData = await fetchSolarData(lat, lon, startDate, endDate);
+
+      const solarTableBody = document.querySelector("#solar-table tbody");
+      solarTableBody.innerHTML = "";
+
+      solarData.forEach(({ date, solarRadiation }) => {
+        const energyProduction = solarRadiation * panelArea * panelEfficiency; // kWh
+        const newRow = document.createElement("tr");
+        newRow.innerHTML = `
+          <td>${date}</td>
+          <td>${solarRadiation.toFixed(2)}</td>
+          <td>${energyProduction.toFixed(2)}</td>
+        `;
+        solarTableBody.appendChild(newRow);
+      });
+    }
+
+    document.getElementById("get-energy").addEventListener("click", () => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          document.getElementById("location").innerText = `Latitude: ${lat.toFixed(2)}, Longitude: ${lon.toFixed(2)}`;
+          calculateSolarEnergy(lat, lon, 15); // Fetch data for the past 15 days
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          alert("Unable to retrieve location. Please enable location services.");
+        }
+      );
+    });
+  </script>
+</body>
+</html>
