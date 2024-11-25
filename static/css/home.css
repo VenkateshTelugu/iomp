@@ -1,0 +1,174 @@
+/* General body styling */
+body {
+    background: url('https://www.hotsolarsolutions.com/wp-content/uploads/2020/04/88570932_l.jpg') center / cover no-repeat fixed;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    color: #333;
+}
+
+/* Header styling */
+header {
+    background-color: rgba(14, 209, 231, 0.85);
+    color: #fff;
+    padding: 15px 20px;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+/* Navigation styling */
+nav ul {
+    display: flex;
+    gap: 20px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #0b0b0a;
+    font-weight: 500;
+    padding: 10px 15px;
+    transition: color 0.3s;
+}
+
+nav ul li a:hover {
+    color: #fff;
+}
+
+/* Main content styling */
+main {
+    margin-top: 80px;
+    padding: 20px;
+    background-color: rgba(223, 215, 215, 0.9);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-width: 1200px;
+    margin: 80px auto;
+}
+
+/* Dashboard container styling */
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Weather data table styling */
+.weather-data table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.weather-data th,
+.weather-data td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+    font-size: 0.95em;
+}
+
+.weather-data th {
+    background-color: #0e81a7;
+    color: #fff;
+}
+
+/* Vacation form styling */
+.vacation-form {
+    background-color: rgba(84, 217, 142, 0.9);
+    border: 1px solid #ce1f1f;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 400px;
+    margin: 20px auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+.vacation-form h3 {
+    font-size: 1.6em;
+    margin-bottom: 20px;
+    color: #0d3e4a;
+}
+
+/* Form label and input styling */
+.vacation-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1em;
+    color: #333;
+    text-align: left;
+}
+
+.vacation-form select,
+.vacation-form input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background-color: #fff;
+    box-sizing: border-box;
+}
+
+/* Submit button styling */
+.vacation-form input[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1em;
+    background-color: #0e81a7;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.vacation-form input[type="submit"]:hover {
+    background-color: #064d5a;
+}
+
+/* Footer styling */
+footer {
+    background-color: rgba(9, 160, 236, 0.8);
+    color: #fff;
+    text-align: center;
+    padding: 15px;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+    font-size: 0.9em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.2em;
+    }
+
+    nav ul {
+        gap: 10px;
+    }
+
+    main, .vacation-form {
+        padding: 15px;
+        margin: 20px auto;
+    }
+
+    .vacation-form {
+        width: 90%;
+    }
+}

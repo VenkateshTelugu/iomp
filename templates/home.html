@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+  <title>Solar Dashboard</title>
+</head>
+
+<body>
+  <header>
+    <h1>Solar Dashboard</h1>
+    <nav>
+      <ul>
+        <li><a href="{{ url_for('solar_details', user_id=user_id) }}">Solar Details</a></li>
+        <li><a href="{{ url_for('vacations', user_id=user_id) }}">Vacations</a></li>
+        <li><a href="{{ url_for('vehicle_charge', user_id=user_id) }}">Vehicle Charge</a></li>
+        <li><a href="{{ url_for('profile_settings', user_id=user_id) }}">Profile Settings</a></li>
+        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Current Bill</h1>
+    <div>
+      <label for="">Bill Number</label>
+      <input type="text" value="{{ user_id }}" readonly>
+      <br><br>
+      <label for="units">Units Used:</label>
+      <input id="units-used" type="text" value="{{ units_value }} kWh" readonly>
+      <br><br>
+      <label for="bill">Current Bill:</label>
+      <input id="bill" type="text" value="₹{{ bill_value }}" readonly>
+    </div>
+
+    <h1>Installation</h1>
+    <div>
+      <p id="installment-cost">Installment Cost: ₹{{ installment_cost }}</p>
+      <p id="panel-count">Total Panels: {{ panels }}</p>
+    </div>
+
+    <div class="weather-data">
+      <h1>Weather Data</h1>
+      <table id="weather-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Solar Radiation (UV Index)</th>
+            <th>Peak Sun Hours</th>
+            <th>Generated Energy (Wh)</th>
+            <th>Generated Energy (kWh)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div id="total-energy">
+      <h1>Total Energy Production: 0 kWh</h1>
+    </div>
+
+    <div id="profit-loss">
+      <h1>Profit or Loss:</h1>
+      <p id="profit-loss-value">Calculating...</p>
+    </div>
+
+    <div id="top-info">
+      Estimated months to clear the installation cost: <span id="estimated-months">Calculating...</span>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2024 Solar Dashboard. All rights reserved.</p>
+  </footer>
+
+  <script>
+    let totalEnergy = 0; // Variable to accumulate total energy over 7 days
+    const panels = parseInt(document.getElementById('panel-count').textContent.replace(/\D/g, '')); // Remove non-numeric characters
+    async function fetchWeatherData(lat, lon, date) {
+        const weatherUrl = `https://api.openuv.io/api/v1/uv?lat=${lat}&lng=${lon}&alt=100&dt=${date}`;
+
+        try {
+            const response = await fetch(weatherUrl, {
+                headers: {
+                    "x-access-token": "openuv-9f0l85rm3wwyhry-io" // Replace with your OpenUV API key
+                }
+            });
+
+            if (!response.ok) throw new Error(`Failed to fetch data for ${date}: ${response.statusText}`);
+
+            const data = await response.json();
+            if (!data.result) {
+                console.error(`No data found for ${date}`);
+                return null;
+            }
+
+            console.log("Raw data:", data.result);
+
+            const uvMax = data.result.uv_max; // Use uv_max for energy calculation
+            const peakSunHours = calculatePeakSunHours(data.result.sun_info); // Calculate peak sun hours
+            const generatedEnergyWh = calculateEnergyGenerated(uvMax); // Calculate energy in Wh
+            const generatedEnergyKWh = generatedEnergyWh *1.7 *0.20; // Convert Wh to kWh
+
+            return { date, uvMax, peakSunHours, generatedEnergyWh, generatedEnergyKWh };
+        } catch (error) {
+            console.error(`Error fetching data for ${date}: ${error.message}`);
+            return null;
+        }
+    }
+
+    // Function to calculate peak sun hours
+    function calculatePeakSunHours(sunInfo) {
+    const sunriseTime = new Date(sunInfo.sun_times.sunrise);
+    const sunsetTime = new Date(sunInfo.sun_times.sunset);
+    const duration = Math.max(4, Math.min(6, ((sunsetTime - sunriseTime) / (1000 * 60 * 60)) / 2)); // Duration in hours
+    return duration;
+}
+
+
+    // Function to calculate energy generated (Wh) based on UV index
+    function calculateEnergyGenerated(uvMax) {
+        const energyWh = Math.max(0, (uvMax * 833)/1000); // Example: 100 Wh per unit UV index
+        return energyWh;
+    }
+
+    // Function to get the date for the past `n` days in ISO 8601 format
+    function getPastDate(daysAgo) {
+        const today = new Date();
+        today.setDate(today.getDate() - daysAgo);
+        return today.toISOString();
+    }
+
+    // Fetch data for the last 7 days
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            for (let i = 0; i < 30; i++) {
+                const date = getPastDate(i);
+                const weatherData = await fetchWeatherData(lat, lon, date);
+                if (weatherData && !isNaN(weatherData.generatedEnergyWh)) {
+                    displayData(weatherData);
+                    totalEnergy += weatherData.generatedEnergyWh;
+                } else {
+                    console.log(`No data for ${date}, skipping.`);
+                }
+                await new Promise(resolve => setTimeout(resolve, 500)); // Avoid rate limits
+            }
+
+            if (!isNaN(totalEnergy)) {
+                const totalEnergyMultiplied = totalEnergy  * panels;
+                const totalEnergyKWh = totalEnergyMultiplied / 1000;
+
+                // Display total energy
+                document.getElementById('total-energy').innerHTML = `<h1>Total Energy Production: ${totalEnergyKWh} kWh</h1>`;
+
+                // Now, calculate and display profit/loss and estimated months
+                calculateProfitOrLoss(totalEnergyKWh);
+                calculateEstimatedMonths(totalEnergyKWh);
+            } else {
+                document.getElementById('total-energy').innerHTML = `<h1>Total Energy Production: Error calculating energy</h1>`;
+            }
+        },
+        (error) => {
+            console.error("Geolocation error:", error);
+            alert("Unable to retrieve your location. Please ensure location services are enabled.");
+        }
+    );
+
+    // Function to display the fetched weather data in the table
+    function displayData(weatherData) {
+        const tableBody = document.querySelector('#weather-table tbody');
+        const row = document.createElement('tr');
+
+        const dateCell = document.createElement('td');
+        dateCell.textContent = new Date(weatherData.date).toLocaleDateString();
+        row.appendChild(dateCell);
+
+        const uvCell = document.createElement('td');
+        uvCell.textContent = weatherData.uvMax.toFixed(2);
+        row.appendChild(uvCell);
+
+        const peakSunCell = document.createElement('td');
+        peakSunCell.textContent = weatherData.peakSunHours.toFixed(2);
+        row.appendChild(peakSunCell);
+
+        const energyWhCell = document.createElement('td');
+        energyWhCell.textContent = weatherData.generatedEnergyWh.toFixed(2);
+        row.appendChild(energyWhCell);
+
+        const energyKWhCell = document.createElement('td');
+        energyKWhCell.textContent = weatherData.generatedEnergyKWh.toFixed(2);
+        row.appendChild(energyKWhCell);
+
+        tableBody.appendChild(row);
+    }
+
+    function calculateProfitOrLoss(totalEnergyKWh) {
+        const unitsUsedElement = document.getElementById("units-used");
+        const unitsUsed = parseFloat(unitsUsedElement.value.replace(' kWh', '')); // Get the units used value from the input field
+
+        // Units used * ₹5 (cost per unit)
+        const totalBill = unitsUsed * 5;
+        // Generated units * ₹4 (solar energy savings)
+        const totalSavings = totalEnergyKWh * 4;
+
+        const profitOrLoss = totalBill - totalSavings;
+        console.log(profitOrLoss);
+        const profitLossText = profitOrLoss > 0 ? `Loss of ₹${profitOrLoss.toFixed(2)}` : `Profit of ₹${Math.abs(profitOrLoss).toFixed(2)}`;
+        document.getElementById("profit-loss-value").textContent = profitLossText;
+    }
+
+    function calculateEstimatedMonths(totalEnergyKWh) {
+    // Remove the ₹ symbol and parse the remaining string as a float
+    const totalCostString = "{{ installment_cost }}"; // Ensure this is passed as a string
+    const totalCost = parseFloat(totalCostString.replace('₹', '').trim());
+
+    // Check if totalCost is valid
+    if (isNaN(totalCost)) {
+        console.error("Invalid total cost:", totalCostString);
+        return;
+    }
+
+    const totalSavingsPerMonth = totalEnergyKWh * 4;
+
+    // Check if totalSavingsPerMonth is valid
+    if (isNaN(totalSavingsPerMonth) || totalSavingsPerMonth === 0) {
+        console.error("Invalid total savings per month:", totalSavingsPerMonth);
+        return;
+    }
+
+    // Calculate the estimated months
+    const estimatedMonths = (totalCost / totalSavingsPerMonth).toFixed(1);
+
+    // Display the result
+    document.getElementById("estimated-months").textContent = `Estimated Months: ${estimatedMonths}`;
+}
+
+  </script>
+</body>
+
+</html>

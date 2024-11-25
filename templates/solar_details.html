@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Details Form</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('solar-background.jpg'); /* Replace with your actual image */
+            background-size: cover;
+            background-position: center;
+            color: white;
+            text-align: center;
+            height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Form Box Styling */
+        .form-box {
+            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
+            padding: 40px;
+            margin: 40px auto;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            box-sizing: border-box;
+        }
+
+        .form-box h2 {
+            margin-bottom: 20px;
+            font-size: 28px;
+            color: #FFD700; /* Gold color */
+        }
+
+        /* Input Fields Styling */
+        label {
+            display: block;
+            margin: 10px 0;
+            font-size: 18px;
+        }
+
+        input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: #f4f4f4;
+        }
+
+        /* Button Styling */
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #FFD700; /* Gold color */
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #f39c12; /* Darker gold when hovering */
+        }
+
+        /* Responsive Design for smaller screens */
+        @media (max-width: 768px) {
+            .form-box {
+                width: 90%;
+            }
+
+            .form-box h2 {
+                font-size: 24px;
+            }
+
+            button {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="form-box">
+            <h2>Enter Solar Details</h2>
+            <form method="POST" action="/solar_details?user_id={{ user_id }}">
+                <label for="total_panels">Number of Panels:</label>
+                <input type="text" id="total_panels" name="total_panels" value="{{ solar_details.size if solar_details else '' }}" required>
+                
+                <label for="setup_date">Setup Date:</label>
+                <input type="date" id="setup_date" name="setup_date" value="{{ solar_details.initial_setup_date.strftime('%Y-%m-%d') if solar_details else '' }}" required>
+                
+                <label for="installment_cost">Installment Cost:</label>
+                <input type="text" id="installment_cost" name="installment_cost" value="{{ solar_details.installment_cost if solar_details else '' }}" required>
+                
+                <button type="submit">Save</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

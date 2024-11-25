@@ -1,0 +1,5 @@
+Flask==2.2.3
+pymongo==4.2.0
+opencv-python
+numpy
+requests
